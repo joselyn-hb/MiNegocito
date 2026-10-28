@@ -18,6 +18,7 @@ from screens.POR_COBRAR.por_cobrar import PorCobrarScreen
 from screens.RIFAS.crear_rifa import CrearRifaScreen
 from screens.RIFAS.rifas_activas import RifasActivasScreen
 from screens.RIFAS.historial_rifas import HistorialRifasScreen
+from screens.RIFAS.tablero_rifa import TableroRifaScreen
 
 
 #PANTALLAS DE LA VENTANA CHANCE
@@ -44,6 +45,12 @@ from screens.CLIENTES.historial_clientes import HistorialClienteScreen
 
 class MiNegocitoApp(App):
     def build(self):
+        """Construye la interfaz principal y devuelve el administrador de pantallas.
+
+        Kivy llama a esta función al iniciar la aplicación. Aquí se crean el menú,
+        sus botones y las pantallas disponibles para que el usuario pueda navegar
+        por las distintas secciones de Mi Negocito.
+        """
         pantalla = BoxLayout(orientation='vertical', padding=20, spacing=15)
 
         titulo = Label(text=' Mi Negocito', font_size=32, size_hint_y=None, height=60)
@@ -58,7 +65,7 @@ class MiNegocitoApp(App):
         boton_clientes = Button(text='Clientes', font_size=20)
         boton_por_cobrar = Button(text='Por cobrar', font_size=20)
 
-        #VINCULA LOS BOTONES PRINCIPALES CON SUS PANTALLAS CORRESPONDIENTES
+        # DEFINE QUE PASARÁ CUANDO SE OPRIME EL BOTÓN
         boton_rifas.bind(on_press=lambda x: setattr(gestor, 'current', 'rifas'))  
         boton_chance.bind(on_press=lambda x: setattr(gestor, 'current', 'chance'))  
         boton_susu.bind(on_press=lambda x: setattr(gestor, 'current', 'susu'))  
@@ -68,12 +75,13 @@ class MiNegocitoApp(App):
 
 
         #AGREGA LOS WIDGETS A LA PANTALLA PRINCIPAL
+        
         pantalla.add_widget(titulo)
         pantalla.add_widget(subtitulo)
+        pantalla.add_widget(boton_mis_ventas)
         pantalla.add_widget(boton_rifas)
         pantalla.add_widget(boton_chance)
         pantalla.add_widget(boton_susu)
-        pantalla.add_widget(boton_mis_ventas)
         pantalla.add_widget(boton_clientes)
         pantalla.add_widget(boton_por_cobrar)
 
@@ -110,7 +118,7 @@ class MiNegocitoApp(App):
         gestor.add_widget(NuevoClienteScreen(name='nuevo_cliente'))
         gestor.add_widget(BuscarClienteScreen(name='buscar_cliente'))  # Agrega la pantalla de buscar cliente al gestor de pantallas
         gestor.add_widget(HistorialClienteScreen(name='historial_clientes'))  # Agrega la pantalla de historial de clientes al gestor de pantallas
-       
+        gestor.add_widget(TableroRifaScreen(name='tablero_rifa'))
 
         #RETORNA EL GESTOR DE PANTALLAS PARA QUE KIVY PUEDA MOSTRAR LA PANTALLA INICIAL
         return gestor
@@ -118,4 +126,5 @@ class MiNegocitoApp(App):
 
 
 if __name__ == '__main__':
+    # Inicia la aplicación cuando este archivo se ejecuta directamente.
     MiNegocitoApp().run()
