@@ -23,6 +23,12 @@ class MisVentasScreen(Screen): #CREA LA PANTALLA MIS VENTAS QUE PUEDE SER MANEJA
         pantalla.add_widget(boton_registrar_ventas) #AGREGA EL BOTON AL CONTENEDOR
         boton_registrar_ventas.bind(on_press=lambda x: setattr(self.manager, 'current', 'registrar_ventas'))  # CAMBIA A LA PANTALLA DE REGISTRAR VENTAS AL PRESIONAR EL BOTON
 
+        # boton para acceder a la lista de ventas 
+        boton_listas_ventas = Button(text='Listas de Ventas', font_size=18, size_hint_y=None, height=50) #CREA UN BOTON PARA VER LAS VENTAS
+        pantalla.add_widget(boton_listas_ventas) #AGREGA EL BOTON AL CONTENEDOR
+        boton_listas_ventas.bind(on_press=lambda x: setattr(self.manager, 'current', 'listas_ventas'))  # CAMBIA A LA PANTALLA DE LISTAS DE VENTAS AL PRESIONAR EL BOTON
+
+
         # boton historial de ventas 
         boton_historial_ventas = Button(text='Historial de Ventas', font_size=18, size_hint_y=None, height=50) #CREA UN BOTON PARA CONSULTAR VENTAS
         pantalla.add_widget(boton_historial_ventas) #AGREGA EL BOTON AL CONTENEDOR

@@ -17,7 +17,9 @@ def obtener_conexion():
             password=os.getenv("DB_PASSWORD", ""),
             database=os.getenv("DB_NAME", "mi_negocito")
         )
-        if conexion.is_connected():         
+        if conexion.is_connected(): 
+         print("Conexión exitosa")   
+         print("Base de datos:", conexion.database)     
          return conexion
 
         conexion.close()

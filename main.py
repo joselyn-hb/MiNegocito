@@ -35,6 +35,9 @@ from screens.SUSUS.historial_susus import HistorialSususScreen
 from screens.VENTAS.nueva_lista_ventas import NuevaListaVentasScreen
 from screens.VENTAS.registrar_ventas import RegistrarVentasScreen
 from screens.VENTAS.historial_ventas import HistorialVentasScreen
+from screens.VENTAS.listas_ventas import ListasVentasScreen
+from screens.VENTAS.pedidos_lista import PedidosListaScreen
+from screens.VENTAS.detalle_pedido import DetallePedidoScreen
 
 #PANTALLAS DE LA VENTANA CLIENTES
 from screens.CLIENTES.nuevo_cliente import NuevoClienteScreen
@@ -119,7 +122,9 @@ class MiNegocitoApp(App):
         gestor.add_widget(BuscarClienteScreen(name='buscar_cliente'))  # Agrega la pantalla de buscar cliente al gestor de pantallas
         gestor.add_widget(HistorialClienteScreen(name='historial_clientes'))  # Agrega la pantalla de historial de clientes al gestor de pantallas
         gestor.add_widget(TableroRifaScreen(name='tablero_rifa'))
-
+        gestor.add_widget(ListasVentasScreen(name='listas_ventas'))  # Agrega la pantalla de listas de ventas al gestor de pantallas
+        gestor.add_widget(PedidosListaScreen(name='pedidos_lista'))  # Agrega la pantalla de pedidos por lista al gestor de pantallas
+        gestor.add_widget(DetallePedidoScreen(name='detalle_pedido'))
         #RETORNA EL GESTOR DE PANTALLAS PARA QUE KIVY PUEDA MOSTRAR LA PANTALLA INICIAL
         return gestor
     
