@@ -1,87 +1,304 @@
+
+from decimal import Decimal, InvalidOperation
+
+from kivy.metrics import dp
+from kivy.graphics import Color, RoundedRectangle
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import  Label
+from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
-from decimal import Decimal, InvalidOperation
 from kivy.uix.popup import Popup
 
 from ventas_db import registrar_venta_individual
 
-class RegistrarVentasScreen(Screen):
-    def __init__(self, **kwargs): #inicializa correctamente la pantalla 
+
+# --------------------------------------------------
+# BOTÓN PERSONALIZADO
+# --------------------------------------------------
+
+class BotonAccion(Button):
+
+    def __init__(self, color_fondo, **kwargs):
         super().__init__(**kwargs)
 
-        self.productos = [] #está lista guardará temporalmente los productos que eel usuari agregue antes de guardar 
+        self.background_normal = ""
+        self.background_down = ""
+        self.background_color = (0, 0, 0, 0)
+        self.color = (1, 1, 1, 1)
+        self.font_size = dp(15)
+        self.bold = True
 
-        pantalla = BoxLayout(orientation='vertical', padding=20, spacing=15) #contenedor principal de la pantalla, que contiene todos los elementos de la pantalla
-        
-        titulo = Label(text='Registrar Ventas Individuales', font_size=32, size_hint_y=None, height=60) #titulo de la pantalla
+        with self.canvas.before:
+            Color(*color_fondo)
+            self.fondo = RoundedRectangle(
+                pos=self.pos,
+                size=self.size,
+                radius=[dp(12)]
+            )
 
-        pantalla.add_widget(titulo) #agrega el titulo a la pantalla
-
-        self.nombre_cliente = TextInput(
-            hint_text = "Nombre del Cliwnte",
-            multiline = False,
-            size_hint_y = None,
-            height = 45
+        self.bind(
+            pos=self.actualizar_fondo,
+            size=self.actualizar_fondo
         )
+
+    def actualizar_fondo(self, instancia, valor):
+        self.fondo.pos = instancia.pos
+        self.fondo.size = instancia.size
+
+
+# --------------------------------------------------
+# VENTANA EMERGENTE CLARA
+# --------------------------------------------------
+
+class PopupClaro(Popup):
+
+    def __init__(self, **kwargs):
+
+        kwargs.setdefault("background", "")
+        kwargs.setdefault("background_color", (1, 1, 1, 1))
+        kwargs.setdefault(
+            "separator_color",
+            (1, 0.78, 0.12, 1)
+        )
+        kwargs.setdefault(
+            "title_color",
+            (0.07, 0.15, 0.35, 1)
+        )
+        kwargs.setdefault("title_size", dp(17))
+
+        super().__init__(**kwargs)
+
+
+# --------------------------------------------------
+# PANTALLA REGISTRAR VENTAS
+# --------------------------------------------------
+
+class RegistrarVentasScreen(Screen):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.productos = []
+
+        # Contenedor principal.
+        pantalla = BoxLayout(
+            orientation="vertical",
+            padding=[dp(18), dp(12), dp(18), dp(12)],
+            spacing=dp(9)
+        )
+
+        # Fondo azul claro.
+        with pantalla.canvas.before:
+            Color(0.91, 0.96, 0.99, 1)
+            fondo = RoundedRectangle(
+                pos=pantalla.pos,
+                size=pantalla.size
+            )
+
+        pantalla.bind(
+            pos=lambda instancia, valor:
+            setattr(fondo, "pos", valor),
+            size=lambda instancia, valor:
+            setattr(fondo, "size", valor)
+        )
+
+        # ------------------------------------------
+        # ENCABEZADO
+        # ------------------------------------------
+
+        encabezado = BoxLayout(
+            orientation="vertical",
+            padding=dp(8),
+            spacing=dp(2),
+            size_hint_y=None,
+            height=dp(82)
+        )
+
+        with encabezado.canvas.before:
+            Color(0.02, 0.25, 0.65, 1)
+            fondo_encabezado = RoundedRectangle(
+                pos=encabezado.pos,
+                size=encabezado.size,
+                radius=[dp(18)]
+            )
+
+        encabezado.bind(
+            pos=lambda instancia, valor:
+            setattr(fondo_encabezado, "pos", valor),
+            size=lambda instancia, valor:
+            setattr(fondo_encabezado, "size", valor)
+        )
+
+        encabezado.add_widget(
+            Label(
+                text="Registrar ventas individuales",
+                font_size=dp(23),
+                bold=True,
+                color=(1, 1, 1, 1)
+            )
+        )
+
+        encabezado.add_widget(
+            Label(
+                text="Registra los productos vendidos a cada cliente",
+                font_size=dp(13),
+                color=(1, 1, 1, 1)
+            )
+        )
+
+        pantalla.add_widget(encabezado)
+
+        # ------------------------------------------
+        # LÍNEA AMARILLA
+        # ------------------------------------------
+
+        linea = BoxLayout(
+            size_hint_y=None,
+            height=dp(5)
+        )
+
+        with linea.canvas.before:
+            Color(1, 0.78, 0.12, 1)
+            fondo_linea = RoundedRectangle(
+                pos=linea.pos,
+                size=linea.size,
+                radius=[dp(3)]
+            )
+
+        linea.bind(
+            pos=lambda instancia, valor:
+            setattr(fondo_linea, "pos", valor),
+            size=lambda instancia, valor:
+            setattr(fondo_linea, "size", valor)
+        )
+
+        pantalla.add_widget(linea)
+
+        # ------------------------------------------
+        # DATOS DEL CLIENTE
+        # ------------------------------------------
+
+        pantalla.add_widget(
+            self.crear_etiqueta("Nombre del cliente")
+        )
+
+        self.nombre_cliente = self.crear_campo(
+            "Escribe el nombre del cliente"
+        )
+
         pantalla.add_widget(self.nombre_cliente)
 
-        self.nombre_producto = TextInput(
-            hint_text="Nombre del producto",
-            multiline=False,
-            size_hint_y=None,
-            height=45
+        # ------------------------------------------
+        # DATOS DEL PRODUCTO
+        # ------------------------------------------
+
+        pantalla.add_widget(
+            self.crear_etiqueta("Nombre del producto")
+        )
+
+        self.nombre_producto = self.crear_campo(
+            "Ejemplo: Perfume"
         )
 
         pantalla.add_widget(self.nombre_producto)
 
-        self.cantidad_producto = TextInput(
-            hint_text="Cantidad",
-            multiline=False,
-            input_filter="int",
+        # Cantidad y precio en una misma fila.
+        fila_datos = BoxLayout(
+            orientation="horizontal",
+            spacing=dp(10),
             size_hint_y=None,
-            height=45
+            height=dp(65)
         )
 
-        pantalla.add_widget(self.cantidad_producto)
-
-        self.precio_producto = TextInput(
-            hint_text="Precio unitario (B/.)",
-            multiline=False,
-            input_filter="float",
-            size_hint_y=None,
-            height=45
+        columna_cantidad = BoxLayout(
+            orientation="vertical",
+            spacing=dp(4)
         )
 
-        pantalla.add_widget(self.precio_producto)
+        columna_cantidad.add_widget(
+            self.crear_etiqueta("Cantidad")
+        )
 
-        self.boton_agregar = Button(
+        self.cantidad_producto = self.crear_campo(
+            "Ejemplo: 2",
+            filtro="int"
+        )
+
+        columna_cantidad.add_widget(
+            self.cantidad_producto
+        )
+
+        columna_precio = BoxLayout(
+            orientation="vertical",
+            spacing=dp(4)
+        )
+
+        columna_precio.add_widget(
+            self.crear_etiqueta("Precio unitario (B/.)")
+        )
+
+        self.precio_producto = self.crear_campo(
+            "Ejemplo: 5.00",
+            filtro="float"
+        )
+
+        columna_precio.add_widget(
+            self.precio_producto
+        )
+
+        fila_datos.add_widget(columna_cantidad)
+        fila_datos.add_widget(columna_precio)
+
+        pantalla.add_widget(fila_datos)
+
+        # ------------------------------------------
+        # BOTÓN AGREGAR PRODUCTO
+        # ------------------------------------------
+
+        self.boton_agregar = BotonAccion(
+            color_fondo=(0.09, 0.42, 0.53, 1),
             text="Agregar producto",
             size_hint_y=None,
-            height=50
+            height=dp(45)
         )
 
         self.boton_agregar.bind(
-            on_press=self.agregar_producto
+            on_release=self.agregar_producto
         )
 
         pantalla.add_widget(self.boton_agregar)
 
+        # ------------------------------------------
+        # LISTA DE PRODUCTOS AGREGADOS
+        # ------------------------------------------
+
+        self.titulo_productos = Label(
+            text="Productos agregados",
+            font_size=dp(16),
+            bold=True,
+            color=(0.07, 0.15, 0.35, 1),
+            size_hint_y=None,
+            height=dp(28)
+        )
+
+        pantalla.add_widget(self.titulo_productos)
+
         self.contenedor_productos = BoxLayout(
             orientation="vertical",
-            spacing=8,
+            spacing=dp(7),
             size_hint_y=None
         )
 
         self.contenedor_productos.bind(
-            minimum_height=self.contenedor_productos.setter("height")
+            minimum_height=
+            self.contenedor_productos.setter("height")
         )
 
         self.scroll_productos = ScrollView(
-            size_hint=(1, 1)
+            size_hint=(1, 1),
+            do_scroll_x=False
         )
 
         self.scroll_productos.add_widget(
@@ -90,39 +307,100 @@ class RegistrarVentasScreen(Screen):
 
         pantalla.add_widget(self.scroll_productos)
 
+        # ------------------------------------------
+        # TOTAL DE LA VENTA
+        # ------------------------------------------
 
         self.total_venta = Label(
             text="Total: B/. 0.00",
-            font_size=22,
+            font_size=dp(21),
+            bold=True,
+            color=(0.07, 0.15, 0.35, 1),
             size_hint_y=None,
-            height=50
-)
+            height=dp(38)
+        )
 
         pantalla.add_widget(self.total_venta)
 
-        self.boton_guardar = Button(
-                    text="Guardar venta",
-                    size_hint_y=None,
-                    height=50
-                )
-        
+        # ------------------------------------------
+        # BOTÓN GUARDAR VENTA
+        # ------------------------------------------
+
+        self.boton_guardar = BotonAccion(
+            color_fondo=(0.02, 0.25, 0.65, 1),
+            text="Guardar venta",
+            size_hint_y=None,
+            height=dp(48)
+        )
+
         self.boton_guardar.bind(
-                    on_press=self.guardar_venta
-                )
-        
+            on_release=self.guardar_venta
+        )
+
         pantalla.add_widget(self.boton_guardar)
 
-      
-        mensaje = Label(text='Registre sus ventas individuales:', font_size=18) #mensaje que indica al usuario que ingrese el nombre de la nueva lista de ventas
-        pantalla.add_widget(mensaje) #agrega el mensaje a la pantalla
+        # ------------------------------------------
+        # BOTÓN VOLVER
+        # ------------------------------------------
 
-        boton_volver = Button(text='Volver', font_size=18, size_hint_y=None, height=50) #botón que permite volver a la pantalla anterior
-        boton_volver.bind(on_press=lambda x: setattr(self.manager, 'current', 'mis_ventas'))  # Cambia a la pantalla de Mis Ventas al presionar el botón
-        
-            
-        pantalla.add_widget(boton_volver) #agrega el botón de volver a la pantalla
+        boton_volver = BotonAccion(
+            color_fondo=(0.02, 0.17, 0.43, 1),
+            text="Volver",
+            size_hint_y=None,
+            height=dp(43)
+        )
+
+        boton_volver.bind(
+            on_release=lambda instancia:
+            setattr(self.manager, "current", "mis_ventas")
+        )
+
+        pantalla.add_widget(boton_volver)
 
         self.add_widget(pantalla)
+
+    # --------------------------------------------------
+    # CREAR ETIQUETAS
+    # --------------------------------------------------
+
+    def crear_etiqueta(self, texto):
+
+        return Label(
+            text=texto,
+            font_size=dp(14),
+            bold=True,
+            color=(0.07, 0.15, 0.35, 1),
+            size_hint_y=None,
+            height=dp(22),
+            halign="left",
+            valign="middle"
+        )
+
+    # --------------------------------------------------
+    # CREAR CAMPOS DE ESCRITURA
+    # --------------------------------------------------
+
+    def crear_campo(self, sugerencia, filtro=None):
+
+        return TextInput(
+            hint_text=sugerencia,
+            multiline=False,
+            input_filter=filtro,
+            size_hint_y=None,
+            height=dp(43),
+            font_size=dp(15),
+            padding=[dp(10), dp(10)],
+            background_normal="",
+            background_active="",
+            background_color=(0.88, 0.94, 0.98, 1),
+            foreground_color=(0.07, 0.15, 0.35, 1),
+            cursor_color=(0.02, 0.25, 0.65, 1),
+            hint_text_color=(0.40, 0.46, 0.55, 1)
+        )
+
+    # --------------------------------------------------
+    # AGREGAR PRODUCTO
+    # --------------------------------------------------
 
     def agregar_producto(self, instancia):
 
@@ -133,13 +411,19 @@ class RegistrarVentasScreen(Screen):
             precio = Decimal(self.precio_producto.text)
 
             if not nombre:
-                raise ValueError("Debes escribir el nombre del producto.")
+                raise ValueError(
+                    "Debes escribir el nombre del producto."
+                )
 
             if cantidad <= 0 or precio <= 0:
-                raise ValueError("La cantidad y el precio deben ser mayores que cero.")
+                raise ValueError(
+                    "La cantidad y el precio deben ser mayores que cero."
+                )
 
         except (ValueError, InvalidOperation):
-            self.mostrar_mensaje("Verifica el nombre, la cantidad y el precio.")
+            self.mostrar_mensaje(
+                "Verifica el nombre, la cantidad y el precio."
+            )
             return
 
         producto = {
@@ -156,6 +440,9 @@ class RegistrarVentasScreen(Screen):
 
         self.actualizar_lista_productos()
 
+    # --------------------------------------------------
+    # ACTUALIZAR LISTA Y TOTAL
+    # --------------------------------------------------
 
     def actualizar_lista_productos(self):
 
@@ -175,8 +462,25 @@ class RegistrarVentasScreen(Screen):
             fila = BoxLayout(
                 orientation="horizontal",
                 size_hint_y=None,
-                height=70,
-                spacing=5
+                height=dp(82),
+                spacing=dp(6),
+                padding=dp(5)
+            )
+
+            # Fondo de cada producto.
+            with fila.canvas.before:
+                Color(1, 1, 1, 1)
+                fondo_fila = RoundedRectangle(
+                    pos=fila.pos,
+                    size=fila.size,
+                    radius=[dp(10)]
+                )
+
+            fila.bind(
+                pos=lambda instancia, valor, fondo=fondo_fila:
+                setattr(fondo, "pos", valor),
+                size=lambda instancia, valor, fondo=fondo_fila:
+                setattr(fondo, "size", valor)
             )
 
             informacion = Label(
@@ -186,25 +490,42 @@ class RegistrarVentasScreen(Screen):
                     f'Precio: B/. {producto["precio_unitario"]:.2f}\n'
                     f'Subtotal: B/. {subtotal:.2f}'
                 ),
-                halign="left"
+                color=(0.07, 0.15, 0.35, 1),
+                font_size=dp(12),
+                halign="left",
+                valign="middle",
+                size_hint_x=1
             )
 
-            boton_editar = Button(
+            informacion.bind(
+                size=lambda instancia, valor:
+                setattr(instancia, "text_size", valor)
+            )
+
+            boton_editar = BotonAccion(
+                color_fondo=(0.09, 0.42, 0.53, 1),
                 text="Editar",
                 size_hint_x=None,
-                width=75
-            )
-            boton_editar.bind(
-                on_press=lambda instancia, i=indice: self.editar_producto(i)
+                width=dp(62),
+                font_size=dp(11)
             )
 
-            boton_eliminar = Button(
+            boton_editar.bind(
+                on_release=lambda instancia, i=indice:
+                self.editar_producto(i)
+            )
+
+            boton_eliminar = BotonAccion(
+                color_fondo=(0.82, 0.16, 0.19, 1),
                 text="Eliminar",
                 size_hint_x=None,
-                width=85
+                width=dp(70),
+                font_size=dp(10)
             )
+
             boton_eliminar.bind(
-                on_press=lambda instancia, i=indice: self.eliminar_producto(i)
+                on_release=lambda instancia, i=indice:
+                self.eliminar_producto(i)
             )
 
             fila.add_widget(informacion)
@@ -213,10 +534,15 @@ class RegistrarVentasScreen(Screen):
 
             self.contenedor_productos.add_widget(fila)
 
-        self.total_venta.text = f"Total: B/. {total:.2f}"
+        self.total_venta.text = (
+            f"Total: B/. {total:.2f}"
+        )
 
+    # --------------------------------------------------
+    # ELIMINAR PRODUCTO
+    # --------------------------------------------------
 
-    def eliminar_producto(self, indice):  #FUNCIÓN PARA ELIMINAR UN PRODUCTO
+    def eliminar_producto(self, indice):
 
         if 0 <= indice < len(self.productos):
 
@@ -224,61 +550,87 @@ class RegistrarVentasScreen(Screen):
 
             self.actualizar_lista_productos()
 
+    # --------------------------------------------------
+    # EDITAR PRODUCTO
+    # --------------------------------------------------
 
-    # MÉTODO PARA EDITAR UN PRODUCTO
     def editar_producto(self, indice):
 
         producto = self.productos[indice]
 
         contenido = BoxLayout(
             orientation="vertical",
-            spacing=10,
-            padding=10
+            spacing=dp(10),
+            padding=dp(15)
         )
 
-        nombre = TextInput(
-            text=producto["producto"],
-            hint_text="Nombre del producto",
-            multiline=False,
-            size_hint_y=None,
-            height=45
+        contenido.add_widget(
+            self.crear_etiqueta("Nombre del producto")
         )
 
-        cantidad = TextInput(
-            text=str(producto["cantidad"]),
-            hint_text="Cantidad",
-            input_filter="int",
-            multiline=False,
-            size_hint_y=None,
-            height=45
+        nombre = self.crear_campo(
+            "Nombre del producto"
         )
-
-        precio = TextInput(
-            text=str(producto["precio_unitario"]),
-            hint_text="Precio unitario",
-            input_filter="float",
-            multiline=False,
-            size_hint_y=None,
-            height=45
-        )
-
-        boton_guardar = Button(
-            text="Guardar cambios",
-            size_hint_y=None,
-            height=45
-        )
+        nombre.text = producto["producto"]
 
         contenido.add_widget(nombre)
-        contenido.add_widget(cantidad)
-        contenido.add_widget(precio)
-        contenido.add_widget(boton_guardar)
 
-        ventana = Popup(
-            title="Editar producto",
-            content=contenido,
-            size_hint=(0.85, 0.65)
+        contenido.add_widget(
+            self.crear_etiqueta("Cantidad")
         )
 
+        cantidad = self.crear_campo(
+            "Cantidad",
+            filtro="int"
+        )
+        cantidad.text = str(producto["cantidad"])
+
+        contenido.add_widget(cantidad)
+
+        contenido.add_widget(
+            self.crear_etiqueta("Precio unitario (B/.)")
+        )
+
+        precio = self.crear_campo(
+            "Precio unitario",
+            filtro="float"
+        )
+        precio.text = str(producto["precio_unitario"])
+
+        contenido.add_widget(precio)
+
+        # Botones de edición.
+        botones = BoxLayout(
+            size_hint_y=None,
+            height=dp(45),
+            spacing=dp(10)
+        )
+
+        boton_guardar = BotonAccion(
+            color_fondo=(0.02, 0.25, 0.65, 1),
+            text="Guardar",
+            font_size=dp(14)
+        )
+
+        boton_cancelar = BotonAccion(
+            color_fondo=(0.82, 0.16, 0.19, 1),
+            text="Cancelar",
+            font_size=dp(14)
+        )
+
+        botones.add_widget(boton_guardar)
+        botones.add_widget(boton_cancelar)
+
+        contenido.add_widget(botones)
+
+        ventana = PopupClaro(
+            title="Editar producto",
+            content=contenido,
+            size_hint=(0.88, None),
+            height=dp(390)
+        )
+
+        # Guardar cambios.
         def guardar_cambios(instancia):
 
             try:
@@ -307,54 +659,90 @@ class RegistrarVentasScreen(Screen):
             ventana.dismiss()
             self.actualizar_lista_productos()
 
-        boton_guardar.bind(on_press=guardar_cambios)
+        boton_guardar.bind(
+            on_release=guardar_cambios
+        )
+
+        boton_cancelar.bind(
+            on_release=lambda instancia: ventana.dismiss()
+        )
 
         ventana.open()
+
+    # --------------------------------------------------
+    # MENSAJES EMERGENTES
+    # --------------------------------------------------
 
     def mostrar_mensaje(self, mensaje):
 
         contenido = BoxLayout(
             orientation="vertical",
-            spacing=10,
-            padding=10
+            spacing=dp(12),
+            padding=dp(15)
         )
 
         texto = Label(
-            text=mensaje
+            text=mensaje,
+            color=(0.07, 0.15, 0.35, 1),
+            font_size=dp(16),
+            halign="center",
+            valign="middle",
+            size_hint_y=None,
+            height=dp(65)
         )
 
-        boton_cerrar = Button(
-            text="Aceptar",
-            size_hint_y=None,
-            height=45
+        texto.bind(
+            width=lambda instancia, valor:
+            setattr(
+                instancia,
+                "text_size",
+                (valor - dp(10), None)
+            )
         )
 
         contenido.add_widget(texto)
+
+        boton_cerrar = BotonAccion(
+            color_fondo=(0.02, 0.25, 0.65, 1),
+            text="Aceptar",
+            size_hint=(0.65, None),
+            height=dp(42),
+            pos_hint={"center_x": 0.5}
+        )
+
         contenido.add_widget(boton_cerrar)
 
-        ventana = Popup(
+        ventana = PopupClaro(
             title="Mi Negocito",
             content=contenido,
-            size_hint=(0.8, 0.4)
+            size_hint=(0.82, None),
+            height=dp(190)
         )
 
         boton_cerrar.bind(
-            on_press=ventana.dismiss
+            on_release=lambda instancia: ventana.dismiss()
         )
 
         ventana.open()
 
+    # --------------------------------------------------
+    # GUARDAR VENTA
+    # --------------------------------------------------
 
     def guardar_venta(self, instancia):
 
         nombre_cliente = self.nombre_cliente.text.strip()
 
         if not nombre_cliente:
-            self.mostrar_mensaje("Escribe el nombre del cliente.")
+            self.mostrar_mensaje(
+                "Escribe el nombre del cliente."
+            )
             return
 
         if not self.productos:
-            self.mostrar_mensaje("Agrega al menos un producto.")
+            self.mostrar_mensaje(
+                "Agrega al menos un producto."
+            )
             return
 
         exito, mensaje = registrar_venta_individual(
